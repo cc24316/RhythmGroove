@@ -438,11 +438,11 @@
       });
     }
 
-    function tocarMusica(i, e) {
-      e.stopPropagation();
-      cardSelecionado = i;
-      renderMusicas();
-    }
+    function tocarMusica(indice, evento) {
+  evento.stopPropagation();
+  const musica = MUSICAS[indice];
+  window.location.href = 'game.html?musica=' + encodeURIComponent(musica.nome);
+}
   </script>
 </body>
 </html>
