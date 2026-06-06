@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rhythm Groove — Jogo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+    body {
+      font-family: 'Press Start 2P', monospace;
+      background: #05001a;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+ 
+    #tela-jogo {
+      position: fixed; inset: 0;
+      background: linear-gradient(180deg, #050015 0%, #120030 60%, #0d0025 100%);
+      display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    #tela-jogo::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.10) 0px, rgba(0,0,0,0.10) 1px, transparent 1px, transparent 3px);
+    }
+ 
+    .jogo-ui-top {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px;
+      background: linear-gradient(180deg, rgba(5,0,26,0.9) 0%, transparent 100%);
+    }
+ 
+    .jogo-nome-musica {
+      font-size: clamp(7px, 1.2vw, 11px); letter-spacing: 2px;
+      color: #ff88ff; text-shadow: 0 0 8px #ff00ff, 2px 2px 0 #660066;
+    }
+ 
+    .btn-sair-jogo {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(6px, 1vw, 9px); padding: 6px 14px;
+      background: transparent; color: #cc66ff;
+      border: 1px solid #7722aa; cursor: pointer;
+      clip-path: polygon(3px 0%, calc(100% - 3px) 0%, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0% calc(100% - 3px), 0% 3px);
+      transition: all .15s;
+    }
+    .btn-sair-jogo:hover { border-color: #ff44ff; color: #ffaaff; box-shadow: 0 0 8px #9900cc; }
+ 
+    #game-canvas-wrapper {
+      position: absolute; inset: 0; z-index: 5;
+      line-height: 0;
+    }
+    #game-canvas-wrapper canvas {
+      display: block; width: 100% !important; height: 100% !important;
+    }
+ 
+    /* ══ GAME OVER ══ */
+    #tela-gameover {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(2,0,12,0.95);
+      flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    }
+    #tela-gameover::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 3px);
+    }
+    #tela-gameover.ativa { display: flex; }
+ 
+    .go-titulo {
+      font-size: clamp(22px, 5vw, 40px); color: #ff44aa;
+      text-shadow: 4px 4px 0 #880022, 3px 3px 0 #aa0033, 0 0 20px #ff0066, 0 0 40px rgba(255,0,100,0.4);
+      animation: brilho-titulo 1.2s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    @keyframes brilho-titulo {
+      0%,100% { filter: brightness(1) }
+      50% { filter: brightness(1.3) drop-shadow(0 0 12px #ff00ff) }
+    }
+    .go-score {
+      font-size: clamp(9px, 2vw, 13px); color: #ffff44;
+      text-shadow: 2px 2px 0 #666600, 0 0 12px #ffff00;
+      position: relative; z-index: 1;
+    }
+    .go-btns { display: flex; gap: 16px; position: relative; z-index: 1; }
+ 
+    .btn-go {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(6px, 1.5vw, 8px); padding: 10px 20px; cursor: pointer;
+      clip-path: polygon(5px 0%, calc(100% - 5px) 0%, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0% calc(100% - 5px), 0% 5px);
+      transition: all .15s; letter-spacing: 1px;
+    }
+    .btn-go.retry {
+      background: linear-gradient(180deg, #cc0066, #880044);
+      color: #ffccff; border: 2px solid #ff44aa; box-shadow: 0 0 8px #ff0066;
+    }
+    .btn-go.retry:hover { background: linear-gradient(180deg, #ff0088, #cc0055); box-shadow: 0 0 16px #ff44ff; transform: scale(1.06); }
+    .btn-go.menu {
+      background: transparent; color: #cc66ff;
+      border: 2px solid #7722aa; box-shadow: 0 0 5px #660099;
+    }
+    .btn-go.menu:hover { border-color: #ff44ff; color: #ffaaff; box-shadow: 0 0 12px #9900cc; }
+  </style>
+</head>
+<body>
+ 
+
+<div id="tela-jogo">
+  <div class="jogo-ui-top">
+    <span class="jogo-nome-musica" id="jogo-nome-musica">-</span>
+    <button class="btn-sair-jogo" onclick="sairDoJogo()">✕ EXIT</button>
+  </div>
+  <div id="game-canvas-wrapper"></div>
+</div>
+ 
+
+<div id="tela-gameover">
+  <div class="go-titulo">GAME OVER</div>
+  <div class="go-score" id="go-score-txt">SCORE: 0</div>
+  <div class="go-btns">
+    <button class="btn-go retry" onclick="retomarJogo()">▶ RETRY</button>
+    <button class="btn-go menu"  onclick="irParaMenu()">◀ MENU</button>
+  </div>
+</div>
+ 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script>
+  const nomMusica = new URLSearchParams(window.location.search).get('musica') || 'UNKNOWN';
+  document.getElementById('jogo-nome-musica').textContent = '♪ ' + nomMusica;
+ 
+ 
+  const CORES = {
+    cima:  { hex: '#4488ff', r: 68,  g: 136, b: 255 },
+    direita:   { hex: '#44ff88', r: 68,  g: 255, b: 136 },
+    baixo: { hex: '#ff4444', r: 255, g: 68,  b: 68  },
+    esquerda:   { hex: '#ffff44', r: 255, g: 255, b: 68  },
+  };
+ 
+  const CAMINHOS_IMAGENS = {
+    cima:  'seta/setaCima.jpeg',
+    direita:   'seta/setaDireita.jpeg',
+    baixo: 'seta/setaBaixo.jpeg',
+    esquerda:   'seta/setaEsquerda.jpeg',
+  };
+ 
+  const CHARS_FALLBACK = { cima: '▲', dir: '▶', baixo: '▼', esq: '◀' };
+ 
+  const TECLAS = {
+    ArrowUp: 'cima', 
+    ArrowRight: 'direita', 
+    ArrowDown: 'baixo', 
+    ArrowLeft: 'esquerda',
+  };
+ 
+ 
+  const DIRECOES    = ['cima', 'direita', 'baixo', 'esquerda'];
+  const MAX_ERROS = 10;
+ 
+  let p5Instance = null;
+ 
+ 
+  function sairDoJogo()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
+  function irParaMenu()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
+  function retomarJogo() { document.getElementById('tela-gameover').classList.remove('ativa'); startGame(); }
+ 
+  
+  function stopGame() {
+  if (p5Instance) {
+    p5Instance.remove();
+    p5Instance = null;
+  }}
+ 
+  function startGame() {
+     stopGame();
+ 
+  document.getElementById("game-canvas-wrapper").innerHTML = "";
+ 
+  const sketch = (p) => {
+    let CW, CH;
+    let LINHA_Y, ZONA_MIN, ZONA_MAX;
+ 
+    let pontos = 0;
+    let erros = 0;
+    let fase = 0;
+    let distMin = 0;
+    let velocidade = 0;
+ 
+    let setas = [];
+    let efeitosAcerto = [];
+    let efeitosErro = [];
+    let particulas = [];
+ 
+    let imagens = {};
+ 
+   p.preload = function() {
+    DIRECOES.forEach(direcao => {
+      p.loadImage(CAMINHOS_IMAGENS[direcao],
+        img => { removerFundoPreto(img); imagens[direcao] = img; },
+        ()  => { imagens[direcao] = null; }
+      );
+    });
+};
+
+
+function atualizarMedidas() {
+ 
+  CW = p.width;
+  CH = p.height;
+ 
+  LINHA_Y = CH * 0.82;
+ 
+  ZONA_MIN = LINHA_Y - CH * 0.025;//altira minima e maz da linha
+  ZONA_MAX = LINHA_Y + CH * 0.08;
+ 
+}
+ 
+    function atualizarFase() {
+      
+ 
+      if (pontos > 30) {
+        fase = 3;
+        distMin = 75 ;
+        velocidade = 3.8 ;
+      }
+      else if (pontos > 20) {
+        fase = 2;
+        distMin = 100 ;
+        velocidade = 3 ;
+      }
+      else if (pontos > 10) {
+        fase = 1;
+        distMin = 125 ;
+        velocidade = 2.2;
+      }
+      else {
+        fase = 0;
+        distMin = 150 ;
+        velocidade = 1.5 ;
+      }
+    }
+ 
+    function criarSeta() {
+ 
+    
+    let direcao = DIRECOES[Math.floor(Math.random() * DIRECOES.length)];
+    //math.random()--> 0 a 1 -->0,3 * 4
+    //Math.floor--> redonda pra baixo 0,78=0, 4,3=4
+    //ent aq e aleatorio ai ele pegaria direcao[4]
+ 
+    setas.push({
+        dir: direcao,
+        x: Math.random() * CW,
+        y: -60
+    });
+ 
+}
+
+
+
+   //FRONTEND
+function desenharSeta(dir, x, y, tamanho) {
+ 
+  let cor = CORES[dir];
+ 
+  if (imagens[dir]) {
+ 
+    p.tint(cor.r, cor.g, cor.b);
+ 
+    p.image(
+      imagens[dir],
+      x - tamanho / 2,
+      y - tamanho / 2,
+      tamanho,
+      tamanho
+    );
+ 
+    p.noTint();
+ 
+  } else {
+ 
+    p.fill(cor.hex);
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textSize(tamanho);
+    p.text(CHARS_FALLBACK[dir], x, y);
+ 
+  }
+ 
+}
+ 
+ 
+    
+ 
+      p.setup = function() {
+        const w = document.getElementById('game-canvas-wrapper');
+        p.createCanvas(w.offsetWidth, w.offsetHeight).parent('game-canvas-wrapper');
+        p.textFont('monospace');
+        p.noStroke();
+        atualizarMedidas();
+        atualizarFase();
+        criarSeta();
+      };
+ 
+      p.windowResized = function() {
+        const w = document.getElementById('game-canvas-wrapper');
+        p.resizeCanvas(w.offsetWidth, w.offsetHeight);
+        atualizarMedidas();
+        atualizarFase();
+      };
+ 
+      p.draw = function() {
+        p.background(5, 0, 25);
+ 
+        // fundo
+        p.stroke(160, 0, 255, 14); p.strokeWeight(1);
+        for (let x = 0; x <= CW; x += 50) p.line(x, 0, x, CH);
+        for (let y = 0; y <= CH; y += 50) p.line(0, y, CW, y);
+        p.noStroke();
+ 
+        
+ 
+        // flash de erro(efeito)
+        for (let i = efeitosErro.length - 1; i >= 0; i--) {
+          efeitosErro[i].timer--;
+          p.fill(200, 0, 50, (efeitosErro[i].timer / 14) * 55);
+          p.rect(0, 0, CW, CH);
+          if (efeitosErro[i].timer <= 0) efeitosErro.splice(i, 1);
+        }
+ 
+        //linha
+        p.fill(255, 255, 255, 10);
+        p.rect(0, ZONA_MIN, CW, ZONA_MAX - ZONA_MIN);
+        p.drawingContext.shadowBlur  = 14;
+        p.drawingContext.shadowColor = 'rgba(200,0,255,0.7)';
+        p.fill(220, 100, 255, 220);
+        p.rect(0, LINHA_Y, CW, 3);
+        p.drawingContext.shadowBlur = 0;
+ 
+        // ponto
+        const fs = Math.max(10, CW * 0.018);
+        p.textAlign(p.LEFT, p.TOP); p.textSize(fs);
+        p.fill(80, 0, 80);   p.text('SCORE: ' + pontos, 18, 18);
+        p.fill(255, 170, 255); p.text('SCORE: ' + pontos, 16, 16);
+ 
+        // fase
+        p.textAlign(p.CENTER, p.TOP); p.textSize(fs * 0.7);
+        p.fill(200, 100, 255);
+        p.text('FASE ' + (fase + 1), CW / 2, 16);
+ 
+ 
+ 
+        // setas caindo
+        const tamSeta = Math.max(30, Math.min(CW, CH) * 0.20);
+ 
+        for (let i = setas.length - 1; i >= 0; i--) {
+        const s = setas[i];
+        s.y += velocidade;
+        desenharSeta(s.dir, s.x, s.y, tamSeta);
+        if (i === setas.length - 1 && s.y > distMin) criarSeta();
+ 
+        if (s.y > CH + 60) {
+            setas.splice(i, 1);
+            efeitosErro.push({ timer: 14 });
+            if (++erros >= MAX_ERROS) { gameOver(pontos); return; }
+        }//se a seta saiu da tela=erro
+        }
+ 
+        // quando vc acerta(efeito)
+        const tamCheck = Math.max(18, tamSeta * 0.55);
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(tamCheck);
+ 
+        for (let i = efeitosAcerto.length - 1; i >= 0; i--) {
+        const ef    = efeitosAcerto[i];
+        const prog  = 1 - --ef.timer / 22;
+        const alpha = Math.floor((1 - prog) * 255);
+        const yPos  = ef.y - prog * 40;
+ 
+        p.fill(20, 0, 40, alpha * 0.6);
+        p.text('✓', ef.x + 2, yPos + 2);
+        p.fill(`rgba(${ef.cor.r},${ef.cor.g},${ef.cor.b},${alpha / 255})`);
+        p.text('✓', ef.x, yPos);
+ 
+        if (ef.timer <= 0) efeitosAcerto.splice(i, 1);
+        }
+ 
+        // partículas(FRONT)
+        p.noStroke();
+        for (let i = particulas.length - 1; i >= 0; i--) {
+          const pt = particulas[i];
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.vy += 0.12; 
+          pt.timer--;
+ 
+          const alpha = Math.floor((pt.timer / pt.timerMax) * 255);
+          const tam   = Math.max(2, (pt.timer / pt.timerMax) * 6);
+ 
+          p.fill(`rgba(${pt.cor.r},${pt.cor.g},${pt.cor.b},${alpha / 255})`);
+          p.ellipse(pt.x, pt.y, tam, tam);
+ 
+          if (pt.timer <= 0) particulas.splice(i, 1);
+        }
+ 
+        atualizarFase();
+      };
+ 
+      //TECLAS(mecher aqui)(BACKEND)
+    p.keyPressed = function() {
+    for (let i = 0; i < setas.length; i++) {
+    if (setas[i].y > ZONA_MIN && setas[i].y < ZONA_MAX) {
+      if (TECLAS[p.key] === setas[i].dir) {
+        acertou(setas[i]);
+        setas.splice(i, 1);
+      }
+    }
+  }
+};
+//efeito
+function acertou(seta) {
+  pontos++;
+  const cor = CORES[seta.dir];
+  efeitosAcerto.push({ x: seta.x, y: seta.y, cor, timer: 22 });
+  const esp = Math.max(3, CW * 0.008);
+  for (let k = 0; k < 8; k++) {
+    particulas.push({
+      x: seta.x, y: seta.y,
+      vx: (Math.random() - 0.5) * esp,
+      vy: (Math.random() - 1.2) * esp * 0.75,
+      cor, timer: 18 + Math.floor(Math.random() * 10), timerMax: 28,
+    });
+  }
+}
+    };
+ 
+    p5Instance = new p5(sketch, document.getElementById('game-canvas-wrapper'));
+  }
+ 
+  function removerFundoPreto(img) {
+    img.loadPixels();
+    for (let i = 0; i < img.pixels.length; i += 4) {
+      if (img.pixels[i] + img.pixels[i+1] + img.pixels[i+2] < 100) img.pixels[i+3] = 0;
+    }
+    img.updatePixels();
+  }
+ 
+  function gameOver(pontosFinal) {
+    stopGame();
+    document.getElementById('go-score-txt').textContent = 'SCORE: ' + pontosFinal;
+    document.getElementById('tela-gameover').classList.add('ativa');
+  }
+ 
+  startGame();
+ 
+</script>
+</body>
+</html>
