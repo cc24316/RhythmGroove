@@ -131,6 +131,12 @@
   const nomMusica = new URLSearchParams(window.location.search).get('musica') || 'UNKNOWN';
   document.getElementById('jogo-nome-musica').textContent = '♪ ' + nomMusica;
  
+const MUSICAS_AUDIO = {
+  MACARENA: '../audio/Macarena_Los_Rios_Naijapals.mp3',
+  RAGATANGA: '../audio/Rouge_-_Ragatanga_(mp3.pm).mp3'
+};
+
+let audioMusica = null;
  
   const CORES = {
     cima:  { hex: '#4488ff', r: 68,  g: 136, b: 255 },
@@ -160,25 +166,59 @@
   const MAX_ERROS = 10;
  
   let p5Instance = null;
- 
+  let geradorSetas = null;
+
+  const BPM = {
+    MACARENA: 103,
+    RAGATANGA: 89
+  };
  
   function sairDoJogo()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
   function irParaMenu()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
   function retomarJogo() { document.getElementById('tela-gameover').classList.remove('ativa'); startGame(); }
  
   
-  function stopGame() {
+function stopGame() {
+
+  if (geradorSetas) {
+    clearInterval(geradorSetas);
+    geradorSetas = null;
+  }
+
   if (p5Instance) {
     p5Instance.remove();
     p5Instance = null;
-  }}
+  }
+
+  if (audioMusica) {
+    audioMusica.pause();
+    audioMusica.currentTime = 0;
+  }
+}
  
-  function startGame() {
-     stopGame();
- 
-  document.getElementById("game-canvas-wrapper").innerHTML = "";
- 
-  const sketch = (p) => {
+function startGame() {
+   stopGame();
+
+   if (audioMusica) {
+      audioMusica.pause();
+      audioMusica = null;
+   }
+
+   if (MUSICAS_AUDIO[nomMusica]) {
+
+  audioMusica = new Audio(MUSICAS_AUDIO[nomMusica]);
+  audioMusica.loop = true;
+  audioMusica.volume = 0.7;
+
+  audioMusica.play().catch(err => {
+     console.error("Erro ao tocar música:", err);
+  });
+
+}
+
+   document.getElementById("game-canvas-wrapper").innerHTML = "";
+
+   const sketch = (p) => {
     let CW, CH;
     let LINHA_Y, ZONA_MIN, ZONA_MAX;
  
@@ -194,6 +234,8 @@
     let particulas = [];
  
     let imagens = {};
+    let ultimoBeat = 0;
+    let intervaloBeat = 0;
  
    p.preload = function() {
     DIRECOES.forEach(direcao => {
@@ -211,36 +253,32 @@ function atualizarMedidas() {
   CH = p.height;
  
   LINHA_Y = CH * 0.82;
- 
-  ZONA_MIN = LINHA_Y - CH * 0.025;//altira minima e maz da linha
+
+  ZONA_MIN = LINHA_Y - CH * 0.025;//altura minima e maxima da linha
   ZONA_MAX = LINHA_Y + CH * 0.08;
  
 }
  
     function atualizarFase() {
-      
- 
-      if (pontos > 30) {
-        fase = 3;
-        distMin = 75 ;
-        velocidade = 3.8 ;
-      }
-      else if (pontos > 20) {
-        fase = 2;
-        distMin = 100 ;
-        velocidade = 3 ;
-      }
-      else if (pontos > 10) {
-        fase = 1;
-        distMin = 125 ;
-        velocidade = 2.2;
-      }
-      else {
-        fase = 0;
-        distMin = 150 ;
-        velocidade = 1.5 ;
-      }
-    }
+
+  if (pontos > 30) {
+    fase = 3;
+    velocidade = 9;
+  }
+  else if (pontos > 20) {
+    fase = 2;
+    velocidade = 8;
+  }
+  else if (pontos > 10) {
+    fase = 1;
+    velocidade = 7;
+  }
+  else {
+    fase = 0;
+    velocidade = 6;
+  }
+
+}
  
     function criarSeta() {
  
@@ -290,18 +328,21 @@ function desenharSeta(dir, x, y, tamanho) {
  
 }
  
- 
-    
- 
-      p.setup = function() {
-        const w = document.getElementById('game-canvas-wrapper');
-        p.createCanvas(w.offsetWidth, w.offsetHeight).parent('game-canvas-wrapper');
-        p.textFont('monospace');
-        p.noStroke();
-        atualizarMedidas();
-        atualizarFase();
-        criarSeta();
-      };
+     p.setup = function() {
+      const w = document.getElementById('game-canvas-wrapper');
+      p.createCanvas(w.offsetWidth, w.offsetHeight).parent('game-canvas-wrapper');
+      p.textFont('monospace');
+      p.noStroke();
+      atualizarMedidas();
+      atualizarFase();
+      criarSeta();
+
+      const bpmMusica = BPM[nomMusica];
+
+      if (bpmMusica) {
+        intervaloBeat = (60 / bpmMusica) * 1000 * 2.7;
+      }
+  };
  
       p.windowResized = function() {
         const w = document.getElementById('game-canvas-wrapper');
@@ -312,6 +353,15 @@ function desenharSeta(dir, x, y, tamanho) {
  
       p.draw = function() {
         p.background(5, 0, 25);
+
+        if (intervaloBeat > 0) {
+          if (p.millis() - ultimoBeat >= intervaloBeat) {
+
+            criarSeta();
+
+            ultimoBeat = p.millis();
+          }
+        }
  
         // fundo
         p.stroke(160, 0, 255, 14); p.strokeWeight(1);
@@ -341,8 +391,8 @@ function desenharSeta(dir, x, y, tamanho) {
         // ponto
         const fs = Math.max(10, CW * 0.018);
         p.textAlign(p.LEFT, p.TOP); p.textSize(fs);
-        p.fill(80, 0, 80);   p.text('SCORE: ' + pontos, 18, 18);
-        p.fill(255, 170, 255); p.text('SCORE: ' + pontos, 16, 16);
+        p.fill(80, 0, 80);   p.text('SCORE: ' + pontos, 18, 45);
+        p.fill(255, 170, 255); p.text('SCORE: ' + pontos, 16, 43);
  
         // fase
         p.textAlign(p.CENTER, p.TOP); p.textSize(fs * 0.7);
@@ -358,7 +408,7 @@ function desenharSeta(dir, x, y, tamanho) {
         const s = setas[i];
         s.y += velocidade;
         desenharSeta(s.dir, s.x, s.y, tamSeta);
-        if (i === setas.length - 1 && s.y > distMin) criarSeta();
+        //if (i === setas.length - 1 && s.y > distMin) criarSeta();
  
         if (s.y > CH + 60) {
             setas.splice(i, 1);
