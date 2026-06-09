@@ -133,30 +133,30 @@
  
  
   const CORES = {
-    cima:  { hex: '#4488ff', r: 68,  g: 136, b: 255 },
-    direita:   { hex: '#44ff88', r: 68,  g: 255, b: 136 },
-    baixo: { hex: '#ff4444', r: 255, g: 68,  b: 68  },
-    esquerda:   { hex: '#ffff44', r: 255, g: 255, b: 68  },
+    c:  { hex: '#4488ff', r: 68,  g: 136, b: 255 },
+    d:   { hex: '#44ff88', r: 68,  g: 255, b: 136 },
+    b: { hex: '#ff4444', r: 255, g: 68,  b: 68  },
+    e:   { hex: '#ffff44', r: 255, g: 255, b: 68  },
   };
  
   const CAMINHOS_IMAGENS = {
-    cima:  'seta/setaCima.jpeg',
-    direita:   'seta/setaDireita.jpeg',
-    baixo: 'seta/setaBaixo.jpeg',
-    esquerda:   'seta/setaEsquerda.jpeg',
+    c:  'seta/setaCima.jpeg',
+    d: 'seta/setaDireita.jpeg',
+    b: 'seta/setaBaixo.jpeg',
+    e: 'seta/setaEsquerda.jpeg',
   };
  
   const CHARS_FALLBACK = { cima: '▲', dir: '▶', baixo: '▼', esq: '◀' };
  
   const TECLAS = {
-    ArrowUp: 'cima', 
-    ArrowRight: 'direita', 
-    ArrowDown: 'baixo', 
-    ArrowLeft: 'esquerda',
+    ArrowUp: 'LDR1', 
+    ArrowRight: 'LDR2', 
+    ArrowDown: 'LDR3', 
+    ArrowLeft: 'LDR4',
   };
  
  
-  const DIRECOES    = ['cima', 'direita', 'baixo', 'esquerda'];
+  const DIRECOES    = ['c', 'd', 'b', 'e'];
   const MAX_ERROS = 10;
  
   let p5Instance = null;
@@ -217,7 +217,7 @@ function atualizarMedidas() {
  
 }
  
-    function atualizarFase() {
+function atualizarFase() {
       
  
       if (pontos > 30) {
@@ -257,9 +257,6 @@ function atualizarMedidas() {
     });
  
 }
-
-
-
    //FRONTEND
 function desenharSeta(dir, x, y, tamanho) {
  
@@ -289,10 +286,6 @@ function desenharSeta(dir, x, y, tamanho) {
   }
  
 }
- 
- 
-    
- 
       p.setup = function() {
         const w = document.getElementById('game-canvas-wrapper');
         p.createCanvas(w.offsetWidth, w.offsetHeight).parent('game-canvas-wrapper');
@@ -406,18 +399,60 @@ function desenharSeta(dir, x, y, tamanho) {
  
         atualizarFase();
       };
+
+
+      let conectado = false;
+
+      p.mousePressed = async function(){
+        port = await navigator.serial.requestPort();
+
+        if(conectado) return;
+        
+        await port.open({
+          baudRate: 9600
+        })
+        conectado = true;
+
+        sensores();
+      }
  
-      //TECLAS(mecher aqui)(BACKEND)
-    p.keyPressed = function() {
-    for (let i = 0; i < setas.length; i++) {
+      //TECLAS(mexer aqui)(BACKEND)
+
+      async function sensores(){
+        let buffer = '';
+        const reader = port.readable.getReader();
+
+        try{
+          while(true){
+            const {value, done} = await reader.read();
+
+            if(done) break;
+            
+            const texto = new TextDecoder().decode(value);
+            buffer += texto;
+            buffer.split('\n');
+            console.log(JSON.stringify(texto));
+
+            verificar(texto)
+          }
+        }
+        catch(e){
+          console.log(e)
+        }
+      }
+
+function verificar(t){
+  for (let i=0; i<setas.length;i++){
     if (setas[i].y > ZONA_MIN && setas[i].y < ZONA_MAX) {
-      if (TECLAS[p.key] === setas[i].dir) {
+      if (t === setas[i].dir) {
         acertou(setas[i]);
         setas.splice(i, 1);
       }
     }
   }
-};
+}
+
+
 //efeito
 function acertou(seta) {
   pontos++;
@@ -453,7 +488,8 @@ function acertou(seta) {
   }
  
   startGame();
- 
+
+
 </script>
 </body>
 </html>
