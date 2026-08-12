@@ -1,0 +1,37 @@
+// Oq eu acho que pode estar dando problema:
+// - Acho que tem q tirar o delay no código original para ele ficar a todo instante vendo se está chegando alguma coisa
+// - Talvez seja, de fato, algum fio ou a iluminação
+// A intencao desse codigo era que só fosse enviado uma vez cada letra, pq senao ele mandava mtas vezes e aí nao condizia com
+// a letra que tava no jogo
+
+int ldrs[4] = {A0, A1, A2, A3};
+bool estado_atual[4] = {false, false, false, false};
+bool estado_anterior[4] = {false, false, false, false};
+char direcoes[4] = {'c', 'd', 'b', 'e'};
+
+
+void setup(){
+  Serial.begin(9600);
+};
+
+
+void loop(){
+  for (int i = 0; i<4; i++){
+    int valor = analogRead(ldrs[i]);
+    if(valor < 500){
+      estado_atual[i] = true;
+      if(estado_atual[i] != estado_anterior[i] && estado_anterior[i] == false){
+        Serial.println(direcoes[i]);
+        estado_anterior[i] = estado_atual[i];
+      }
+    }
+    else{
+      if(estado_atual[i] != false){
+          estado_atual[i] = false;
+          estado_anterior[i] = estado_atual[i];
+      }
+    }
+  }
+ 
+  delay(200);
+};
