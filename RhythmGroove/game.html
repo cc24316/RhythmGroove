@@ -18,7 +18,7 @@
     #tela-jogo {
       position: fixed; inset: 0;
       background: linear-gradient(180deg, #050015 0%, #120030 60%, #0d0025 100%);
-      display: flex;
+      display: none;
       flex-direction: column; align-items: center; justify-content: center;
       overflow: hidden;
     }
@@ -56,6 +56,8 @@
     #game-canvas-wrapper canvas {
       display: block; width: 100% !important; height: 100% !important;
     }
+
+    #tela-jogo.ativa { display: flex; }
  
     /* ══ GAME OVER ══ */
     #tela-gameover {
@@ -103,6 +105,53 @@
       border: 2px solid #7722aa; box-shadow: 0 0 5px #660099;
     }
     .btn-go.menu:hover { border-color: #ff44ff; color: #ffaaff; box-shadow: 0 0 12px #9900cc; }
+
+    /* TELA DE CONEXÃO */
+    #tela-conexao{
+      position: fixed; inset: 0;
+      background: linear-gradient(180deg, #050015 0%, #120030 60%, #0d0025 100%);
+      display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .con-title {
+      font-size: clamp(22px, 5vw, 40px); color: #ff44aa;
+      text-shadow: 4px 4px 0 #880022, 3px 3px 0 #aa0033, 0 0 20px #ff0066, 0 0 40px rgba(255,0,100,0.4);
+      animation: brilho-titulo 1.2s ease-in-out infinite;
+      position: relative; z-index: 1;
+      margin: 2rem 0;
+    }
+    @keyframes brilho-titulo {
+      0%,100% { filter: brightness(1) }
+      50% { filter: brightness(1.3) drop-shadow(0 0 12px #ff00ff) }
+    }
+
+    .con-button {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(6px, 1.5vw, 8px); padding: 10px 20px; cursor: pointer;
+      clip-path: polygon(5px 0%, calc(100% - 5px) 0%, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0% calc(100% - 5px), 0% 5px);
+      transition: all .15s; letter-spacing: 1px;
+    }
+    .con-button:hover { background: linear-gradient(180deg, #ff0088, #cc0055); box-shadow: 0 0 16px #ff44ff; transform: scale(1.06); }
+    
+
+    /* TELA VITÓRIA */
+    #tela-vitoria{
+      position: fixed; inset: 0;
+      background: linear-gradient(180deg, #050015 0%, #120030 60%, #0d0025 100%);
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .win-title {
+      font-size: clamp(22px, 5vw, 40px); color: #ff44aa;
+      text-shadow: 4px 4px 0 #880022, 3px 3px 0 #aa0033, 0 0 20px #ff0066, 0 0 40px rgba(255,0,100,0.4);
+      animation: brilho-titulo 1.2s ease-in-out infinite;
+      position: relative; z-index: 1;
+      margin: 2rem 0;
+    }
+
+    #tela-vitoria.ativa{ display: flex; }
   </style>
 </head>
 <body>
@@ -123,6 +172,21 @@
   <div class="go-btns">
     <button class="btn-go retry" onclick="retomarJogo()">▶ RETRY</button>
     <button class="btn-go menu"  onclick="irParaMenu()">◀ MENU</button>
+  </div>
+</div>
+
+<div id="tela-conexao">
+  <div class="con-title">CONFIGURAÇÃO DE CONEXÃO</div>
+  <div class="con-buttons">
+    <button class="con-button">CONECTAR</button>
+  </div>
+</div>
+
+<div id="tela-vitoria">
+  <div class="win-title">PARABÉNS!</div>
+  <div class="win-btns">
+    <button class="btn-go retry" onclick="retomarJogoVitoria()">▶ RETRY</button>
+    <button class="btn-go menu" onclick="irParaMenu()">◀ MENU</button>
   </div>
 </div>
  
@@ -176,8 +240,34 @@ let audioMusica = null;
   function sairDoJogo()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
   function irParaMenu()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
   function retomarJogo() { document.getElementById('tela-gameover').classList.remove('ativa'); startGame(); }
- 
-  
+  function retomarJogoVitoria() { document.getElementById('tela-vitoria').classList.remove('ativa'); startGame(); }
+
+
+let conectado = false
+
+//Função que configura a conexão com o arduíno antes de iniciar o jogo
+function connect(){
+
+  const button = document.querySelector('.con-button')
+
+  button.onclick = async function() {
+    console.log('clicou no botao aqui o')
+    port = await navigator.serial.requestPort();
+
+    await port.open({
+      baudRate: 9600
+    })
+
+    conectado = true
+
+    if (conectado) {
+      document.getElementById('tela-conexao').style.display = 'none'
+      document.getElementById('tela-jogo').classList.add('ativa')
+      startGame(); 
+    }
+  }
+}
+
 function stopGame() {
 
   if (geradorSetas) {
@@ -207,7 +297,9 @@ function startGame() {
    if (MUSICAS_AUDIO[nomMusica]) {
 
   audioMusica = new Audio(MUSICAS_AUDIO[nomMusica]);
-  audioMusica.loop = true;
+  audioMusica.onended = function(){
+    vitoria();
+  } 
   audioMusica.volume = 0.7;
 
   audioMusica.play().catch(err => {
@@ -246,6 +338,11 @@ function startGame() {
     });
 };
 
+function vitoria(){
+    document.getElementById('tela-jogo').style.display = 'none'
+    document.getElementById('tela-vitoria').classList.add('ativa')
+    stopGame();
+}
 
 function atualizarMedidas() {
  
@@ -254,8 +351,8 @@ function atualizarMedidas() {
  
   LINHA_Y = CH * 0.82;
 
-  ZONA_MIN = LINHA_Y - CH * 0.025;//altura minima e maxima da linha
-  ZONA_MAX = LINHA_Y + CH * 0.08;
+  ZONA_MIN = LINHA_Y - CH * 0.080;//altura minima e maxima da linha
+  ZONA_MAX = LINHA_Y + CH * 0.020;
  
 }
  
@@ -275,7 +372,7 @@ function atualizarMedidas() {
   }
   else {
     fase = 0;
-    velocidade = 6;
+    velocidade = 2;
   }
 
 }
@@ -285,7 +382,7 @@ function atualizarMedidas() {
     
     let direcao = DIRECOES[Math.floor(Math.random() * DIRECOES.length)];
     //math.random()--> 0 a 1 -->0,3 * 4
-    //Math.floor--> redonda pra baixo 0,78=0, 4,3=4
+    //Math.floor--> arredonda pra baixo 0,78=0, 4,3=4
     //ent aq e aleatorio ai ele pegaria direcao[4]
  
     setas.push({
@@ -413,6 +510,8 @@ function desenharSeta(dir, x, y, tamanho) {
             if (++erros >= MAX_ERROS) { gameOver(pontos); return; }
         }//se a seta saiu da tela=erro
         }
+
+        if (pontos == 10) vitoria();
  
         // quando vc acerta(efeito)
         const tamCheck = Math.max(18, tamSeta * 0.55);
@@ -454,40 +553,22 @@ function desenharSeta(dir, x, y, tamanho) {
         atualizarFase();
       };
 
-
-      let conectado = false;
-
-      p.mousePressed = async function(){
-        port = await navigator.serial.requestPort();
-
-        if(conectado) return;
-        
-        await port.open({
-          baudRate: 9600
-        })
-        conectado = true;
-
-        sensores();
-      }
- 
       //TECLAS(mexer aqui)(BACKEND)
 
-      async function sensores(){
-        let buffer = '';
-        const reader = port.readable.getReader();
+    async function sensores(){
+      const reader = port.readable.getReader();
 
-        try{
+      try{
           while(true){
             const {value, done} = await reader.read();
 
             if(done) break;
             
             const texto = new TextDecoder().decode(value);
-            buffer += texto;
-            buffer.split('\n');
-            console.log(JSON.stringify(texto));
 
-            verificar(texto)
+            console.log(JSON.stringify(texto.trim()));
+
+            verificar(texto.trim());
           }
         }
         catch(e){
@@ -498,6 +579,8 @@ function desenharSeta(dir, x, y, tamanho) {
 function verificar(t){
   for (let i=0; i<setas.length;i++){
     if (setas[i].y > ZONA_MIN && setas[i].y < ZONA_MAX) {
+      console.log(t);
+      console.log(setas[i].dir)
       if (t === setas[i].dir) {
         acertou(setas[i]);
         setas.splice(i, 1);
@@ -505,7 +588,6 @@ function verificar(t){
     }
   }
 }
-
 
 //efeito
 function acertou(seta) {
@@ -522,7 +604,9 @@ function acertou(seta) {
     });
   }
 }
+  sensores();
     };
+
  
     p5Instance = new p5(sketch, document.getElementById('game-canvas-wrapper'));
   }
@@ -540,10 +624,8 @@ function acertou(seta) {
     document.getElementById('go-score-txt').textContent = 'SCORE: ' + pontosFinal;
     document.getElementById('tela-gameover').classList.add('ativa');
   }
- 
-  startGame();
 
-
+connect();
 </script>
 </body>
 </html>
