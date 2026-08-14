@@ -170,7 +170,7 @@
   <div class="go-titulo">GAME OVER</div>
   <div class="go-score" id="go-score-txt">SCORE: 0</div>
   <div class="go-btns">
-    <button class="btn-go retry" onclick="retomarJogo()">▶ RETRY</button>
+    <button class="btn-go retry" onclick="retomarJogo('tela-gameover')">▶ RETRY</button>
     <button class="btn-go menu"  onclick="irParaMenu()">◀ MENU</button>
   </div>
 </div>
@@ -185,19 +185,22 @@
 <div id="tela-vitoria">
   <div class="win-title">PARABÉNS!</div>
   <div class="win-btns">
-    <button class="btn-go retry" onclick="retomarJogoVitoria()">▶ RETRY</button>
+    <button class="btn-go retry" onclick="retomarJogo('tela-vitoria')">▶ RETRY</button>
     <button class="btn-go menu" onclick="irParaMenu()">◀ MENU</button>
   </div>
 </div>
  
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 <script>
-  const nomMusica = new URLSearchParams(window.location.search).get('musica') || 'UNKNOWN';
+  const nomMusica = new URLSearchParams(window.location.search).get('arquivo') || 'UNKNOWN';
   document.getElementById('jogo-nome-musica').textContent = '♪ ' + nomMusica;
  
 const MUSICAS_AUDIO = {
-  MACARENA: '../audio/Macarena_Los_Rios_Naijapals.mp3',
-  RAGATANGA: '../audio/Rouge_-_Ragatanga_(mp3.pm).mp3'
+  MACARENA: '../audio/Macarena.mp3',
+  RAGATANGA: '../audio/Ragatanga.mp3',
+  WHATISLOVE: '../audio/WhatIsLove.mp3',
+  BARBIEGIRL: '../audio/BarbieGirl.mp3',
+  DESPACITO: '../audio/Despacito.mp3'
 };
 
 let audioMusica = null;
@@ -210,10 +213,10 @@ let audioMusica = null;
   };
  
   const CAMINHOS_IMAGENS = {
-    c:  'seta/setaCima.jpeg',
-    d: 'seta/setaDireita.jpeg',
-    b: 'seta/setaBaixo.jpeg',
-    e: 'seta/setaEsquerda.jpeg',
+    c:  'seta/cimaEsquerda.png',
+    d: 'seta/cimaDireita.png',
+    b: 'seta/baixoEsquerda.png',
+    e: 'seta/baixoDireita.png',
   };
  
   const CHARS_FALLBACK = { cima: '▲', dir: '▶', baixo: '▼', esq: '◀' };
@@ -232,15 +235,22 @@ let audioMusica = null;
   let p5Instance = null;
   let geradorSetas = null;
 
-  const BPM = {
-    MACARENA: 103,
-    RAGATANGA: 89
+  let BPM = {
+    MACARENA: [103, 106, 109, 112],
+    RAGATANGA: [89, 92, 95, 98], 
+    WHATISLOVE: [103, 106, 109, 112],
+    BARBIEGIRL: [103, 110, 116, 124],
+    DESPACITO: [103, 106, 109, 112]
   };
  
   function sairDoJogo()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
   function irParaMenu()  { stopGame(); window.location.href = 'rhythm_groove.html'; }
-  function retomarJogo() { document.getElementById('tela-gameover').classList.remove('ativa'); startGame(); }
-  function retomarJogoVitoria() { document.getElementById('tela-vitoria').classList.remove('ativa'); startGame(); }
+  function retomarJogo(telaA) {
+      document.getElementById(`${telaA}`).classList.remove('ativa');
+      document.getElementById('tela-jogo').style.display = 'flex';
+
+      startGame();
+  }
 
 
 let conectado = false
@@ -328,6 +338,7 @@ function startGame() {
     let imagens = {};
     let ultimoBeat = 0;
     let intervaloBeat = 0;
+    let batida = 2.7;
  
    p.preload = function() {
     DIRECOES.forEach(direcao => {
@@ -345,15 +356,19 @@ function vitoria(){
 }
 
 function atualizarMedidas() {
- 
-  CW = p.width;
-  CH = p.height;
- 
-  LINHA_Y = CH * 0.82;
+          
+          CW = p.width;
+          CH = p.height;
 
-  ZONA_MIN = LINHA_Y - CH * 0.080;//altura minima e maxima da linha
-  ZONA_MAX = LINHA_Y + CH * 0.020;
- 
+          let tamSeta = Math.max(30, Math.min(CW, CH) * 0.20);
+
+          CWmax = p.width - tamSeta / 2
+          CWmin = 0 + tamSeta / 2 
+
+          LINHA_Y = CH * 0.82;
+
+          ZONA_MIN = LINHA_Y - CH * 0.025;
+          ZONA_MAX = LINHA_Y + CH * 0.08;
 }
  
     function atualizarFase() {
@@ -361,18 +376,22 @@ function atualizarMedidas() {
   if (pontos > 30) {
     fase = 3;
     velocidade = 9;
+    batida = 0.5
   }
   else if (pontos > 20) {
     fase = 2;
     velocidade = 8;
+    batida = 1;
   }
   else if (pontos > 10) {
     fase = 1;
     velocidade = 7;
+    batida = 2;
   }
   else {
     fase = 0;
     velocidade = 2;
+    batida = 2.7
   }
 
 }
@@ -387,7 +406,7 @@ function atualizarMedidas() {
  
     setas.push({
         dir: direcao,
-        x: Math.random() * CW,
+        x: Math.random() * (CWmax - CWmin) + CWmin,
         y: -60
     });
  
@@ -431,10 +450,10 @@ function desenharSeta(dir, x, y, tamanho) {
       atualizarFase();
       criarSeta();
 
-      const bpmMusica = BPM[nomMusica];
+      let bpmMusica = BPM[nomMusica][fase];
 
       if (bpmMusica) {
-        intervaloBeat = (60 / bpmMusica) * 1000 * 2.7;
+        intervaloBeat = (60 / bpmMusica) * 1000 * batida;
       }
   };
  
@@ -496,7 +515,7 @@ function desenharSeta(dir, x, y, tamanho) {
  
  
         // setas caindo
-        const tamSeta = Math.max(30, Math.min(CW, CH) * 0.20);
+        let tamSeta = Math.max(30, Math.min(CW, CH) * 0.20);
  
         for (let i = setas.length - 1; i >= 0; i--) {
         const s = setas[i];
@@ -511,7 +530,7 @@ function desenharSeta(dir, x, y, tamanho) {
         }//se a seta saiu da tela=erro
         }
 
-        if (pontos == 10) vitoria();
+          if (pontos == 50) { vitoria(); }
  
         // quando vc acerta(efeito)
         const tamCheck = Math.max(18, tamSeta * 0.55);

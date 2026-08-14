@@ -395,8 +395,11 @@
     }
 
     const MUSICAS = [
-      { nome: 'MACARENA' },
-      { nome: 'RAGATANGA' },
+      { nome: 'MACARENA' , arquivo: 'MACARENA'},
+      { nome: 'RAGATANGA', arquivo: 'RAGATANGA' },
+      { nome: 'WHAT IS LOVE', arquivo: 'WHATISLOVE'},
+      { nome: 'BARBIE GIRL', arquivo: 'BARBIEGIRL'},
+      { nome: 'DESPACITO', arquivo: 'DESPACITO'}
     ];
 
     const SETAS_CARD = [
@@ -441,7 +444,7 @@
     function tocarMusica(indice, evento) {
   evento.stopPropagation();
   const musica = MUSICAS[indice];
-  window.location.href = 'game.html?musica=' + encodeURIComponent(musica.nome);
+  window.location.href = 'game.html?musica=' + encodeURIComponent(musica.nome) + '&arquivo=' + encodeURIComponent(musica.arquivo);
 }
   </script>
 </body>
