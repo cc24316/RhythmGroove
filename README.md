@@ -34,3 +34,10 @@
   Rode o website usando o Live Server (extensão do VS Code).
 
   Siga o fluxo da aplicação (botão iniciar -> escolha de música -> conexão com o arduino).
+
+## Devs do projeto
+
+- Ana Paula [Link Github](https://github.com/AnaPGomes)
+- Camila [Link Github](https://github.com/camilajs)
+- Isabela Pak [Link Gihtub](https://github.com/cc24316)
+- Vitória Lima [Link Github](https://github.com/ViihLima2)
