@@ -22,7 +22,7 @@
 
   Usamos as saídas (D0) dos sensores conectando nas portas digitais do arduino indicadas (2, 3, 4, 5). E as conexões com o 5V e GND também foram feitas da mesma forma que foi mostrado.
 
-
+! circuito.png
 
 ## Como usar o projeto:
   Primeiramente, monte o circuito como indicado.
