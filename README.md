@@ -31,7 +31,7 @@
 
   Clone o repositório usando `git clone https://github.com/cc24316/RhythmGroove.git` ou baixe o arquivo `.zip` do projeto e descompacte-o.
 
-  Rode o website usando o Live Server (extensão do VS Code).
+  Rode o website usando o Live Server (extensão do VS Code) no arquivo `rhythm_groove.html`.
 
   Siga o fluxo da aplicação (botão iniciar -> escolha de música -> conexão com o arduino).
 
