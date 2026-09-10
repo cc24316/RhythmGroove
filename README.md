@@ -37,7 +37,7 @@
 
 ## Devs do projeto
 
-- Ana Paula [Link Github](https://github.com/AnaPGomes)
-- Camila [Link Github](https://github.com/camilajs)
-- Isabela Pak [Link Gihtub](https://github.com/cc24316)
-- Vitória Lima [Link Github](https://github.com/ViihLima2)
+- Ana Paula    [Ana Github](https://github.com/AnaPGomes)
+- Camila       [Camila Github](https://github.com/camilajs)
+- Isabela Pak  [Pak Gihtub](https://github.com/cc24316)
+- Vitória Lima [Vitoria Github](https://github.com/ViihLima2)
